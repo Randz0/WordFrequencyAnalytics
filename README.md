@@ -19,4 +19,5 @@ This Seciton should outline some of the main commands as well as dependencies to
   <b>find (isCaseSensitive) (word)</b> : Finds the number of appearences of a word in the scanned document. Uppercase C is used to specify the search should be case sensitive
   otherwise the search is assumed to ignore case. <br> <br>
   <b>plot (depth)</b> : Plots the frequency of words up to the depthmost appearing word (E.g. a depth of 10 would return the 10 most used words in the plot)
-  and opens them up in a new bar graph. Currently words in this format are sorted case sensitive, this will be an optional flag in the future.
+  and opens them up in a new bar graph. Currently words in this format are sorted case sensitive, this will be an optional flag in the future. <br> <br>
+  <b>-exit</b> Exits the program
