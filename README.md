@@ -1,6 +1,6 @@
 Summary
 -
-This project was initially inspired after I noticed that my history teacher really liked to say the word massive
+This project was initially inspired after I noticed that my history teacher really liked to say the word massive.
 Using matplotlib to help display the results, this program hopes to be a tool for analyzing the frequency of words 
 in speech.
 
