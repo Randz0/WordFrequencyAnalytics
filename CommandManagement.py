@@ -37,17 +37,17 @@ class GetOcurrences(Command):
         return self.context_prop
     
     def FindCaseSensitiveOcurrences(self):
-        if not self.context in DataParser.ocurrenceTracker:
+        if not self.context in DataParser.Cached.defaultWordsToFrequency:
             print(0)
 
             return
 
-        print(DataParser.ocurrenceTracker[self.context])
+        print(DataParser.Cached.defaultWordsToFrequency[self.context])
 
     def FindNonCaseSensitiveOcurrences(self):
-        for key in DataParser.ocurrenceTracker.keys():
+        for key in DataParser.Cached.allLowerWordsToFrequency.keys():
             if key.lower() == self.context.lower():
-                print(DataParser.ocurrenceTracker[key])
+                print(DataParser.Cached.allLowerWordsToFrequency[key])
 
                 return
 
@@ -82,10 +82,14 @@ class OpenFile(Command):
     def ActivateCommand(self):
         try:
             textLines = IOReader.TryExtractTextLines(self.context)
-            DataParser.currentTokenizedWords = DataParser.TokenizeInputFileLinesToWords(textLines)
+            DataParser.currentTokenizedWords = DataParser.CacheTokenizedFileAsWords(textLines)
             
-            DataParser.CountWordOcurrences(DataParser.currentTokenizedWords)
-            DataParser.CreateOrganizedWordOcurrences()
+            DataParser.CacheWordFrequencies(DataParser.Cached.currentTokenizedWords)
+
+            DataParser.CacheOrganizedWordFrequencyList(DataParser.Cached.defaultWordsToFrequency, DataParser.Cached.byFreqWordsToFrequency)
+            DataParser.CacheOrganizedWordFrequencyList(DataParser.Cached.allLowerWordsToFrequency, DataParser.Cached.allLowerByFreqWordsToFreq)
+
+            DataParser.Cached.currentPlotBounds = (0, len(DataParser.Cached.byFreqWordsToFrequency) - 1)
         except:
             print("Could not open requested file")
             return
@@ -103,20 +107,72 @@ class PlotCurrentData(Command):
     
     @context.setter
     def context(self, value):
-        self.context_prop = value[5::]
+        commandSettings = str.split(value) # Should be 2 long (plot, and Case Sensitive Flag)
+        
+        try:
+            self.isCaseSensitive = commandSettings[1][0] == "C"
+
+            return
+        except ValueError:
+            print("Number of Entries must be a positive number")
+        except IndexError:
+            print("Must Specify Correct # of Args")
+        except Exception:
+            pass # Will only print generic exception documentation
+
+        self.validCommand = False
+
+    def __init__(self):
+        super().__init__()
+
+        self.isCaseSensitive = True
 
     def ActivateCommand(self):
         try:
-            Visualizer.LoadInGraphData(int(self.context))
+            Visualizer.LoadInGraphData(self.isCaseSensitive)
             Visualizer.RenderBarGraph()
-        except ValueError:
-            print("Could Not Recognize The Number of Entries Requested as a Number")
-            return
-        except Exception as e:
+        except Exception:
             print("Could not plot the data.")
             return
         
         print("Sucessfully graphed data")
+
+class SetPlotBounds(Command):
+    @property
+    def context():
+        pass
+
+    @context.getter
+    def context(self):
+        return self.context_prop
+    
+    @context.setter
+    def context(self, value):
+        startStopIndexesStr = str.split(value)
+
+        try:
+            self.startStopIndexes = ( int(startStopIndexesStr[1]) - 1, int(startStopIndexesStr[2]) - 1 )
+
+            return
+        except IndexError:
+            print("Invalid Command Args")
+        except ValueError:
+            print("Enter in Numbers for the Bounds")
+        except Exception:
+            pass
+
+        self.validCommand = False
+    
+    def ActivateCommand(self):
+        DataParser.Cached.currentPlotBounds = self.startStopIndexes
+
+        print (f"Set Plot Bound Indexes To ({self.startStopIndexes[0]}, {self.startStopIndexes[1]})")
+
+    def __init__(self):
+        super().__init__()
+
+        self.startStopIndexes = (0, 0)
+        self.validCommand = True
 
 # Returns None if the input matches no recognizable command, otherwise returns the command object
 def RecieveNextCommand(consoleInput):
@@ -128,6 +184,8 @@ def RecieveNextCommand(consoleInput):
         outputCommand = OpenFile()
     elif str.startswith(consoleInput, "plot"):
         outputCommand = PlotCurrentData()
+    elif str.startswith(consoleInput, "setBounds"):
+        outputCommand = SetPlotBounds()
     else:
         return None
     
