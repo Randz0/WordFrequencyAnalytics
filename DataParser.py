@@ -1,4 +1,4 @@
-translationTable = {"." : " ", "," : " ", "!" : " ", ":" : " ", ";" : " ", "?" : " ", "\n" : " "} # Dictionary used to filter out punctuation from the search result
+editedOutPunctuation = {"." : " ", "," : " ", "!" : " ", ":" : " ", ";" : " ", "?" : " ", "\n" : " "} # Dictionary used to filter out punctuation from the search result
 
 class Cached:
     currentTokenizedWords = None
@@ -18,7 +18,7 @@ def CacheTokenizedFileAsWords(allFileLines):
     for i in range(len(allFileLines)):
         line = allFileLines[i]
 
-        line = str.translate(line, str.maketrans(translationTable))
+        line = str.translate(line, str.maketrans(editedOutPunctuation))
         line = str.split(line) # The line has been divied up into an array of the individual words
 
         for j in range(len(line)):
