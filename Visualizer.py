@@ -14,10 +14,10 @@ def OnYLimChange():
         axes.set_ylim(0, yLimitsHeight)
 
 def SetBarGraphVisualStyle(axes):
-    axes.set_title("Ocurrences Of Each Word")
+    axes.set_title("Appearences Of Each Word")
     
-    axes.set_xlabel("Times Repeated")
-    axes.set_ylabel("Words")
+    axes.set_xlabel("Words")
+    axes.set_ylabel("Times Repeated")
 
     axes.callbacks.connect("ylim_changed", lambda evt: OnYLimChange())
 
