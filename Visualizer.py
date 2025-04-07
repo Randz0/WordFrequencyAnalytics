@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import DataParser
 
 # Load in the variables that will be used to contruct the output graph, leftover from the matplotlib framework
@@ -21,14 +20,14 @@ def SetBarGraphVisualStyle(axes):
 
     axes.callbacks.connect("ylim_changed", lambda evt: OnYLimChange())
 
-def LoadInGraphData(isCaseSensitive):
+def LoadInGraphData(cachedFile):
     global figure, axes
 
     figure, axes = plt.subplots()
+    
+    data = cachedFile.FetchWordsToFrequencies()
 
-    data = DataParser.FetchWordsInFromPlotBounds(DataParser.Cached.byFreqWordsToFrequency if isCaseSensitive else DataParser.Cached.allLowerByFreqWordsToFreq)
-
-    axes.bar(data[0], data[1], width=0.4, align="center")
+    axes.bar(data[0], data[1], width=0.6, align="center")
 
     SetBarGraphVisualStyle(axes)
     
