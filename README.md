@@ -24,5 +24,6 @@ This Seciton should outline some of the main commands as well as dependencies to
 
   <b>plot (isCaseSensitive)</b> : Plots the frequency of words using the flag is case sensitive as "c" to ignore any differences in case between words and "C" (or any other letter) to
   remain case sensitive when plotting data <br>
-  
+
+  <b>setBlacklist (blacklist file path) (file name)</b> : Sets a blacklist to a given file so that when the data is plotted, certain words are ignored. 
   <b>-exit</b> Exits the program
