@@ -1,5 +1,7 @@
 import CommandManagement
 
+CommandManagement.AddHelpMenu()
+
 consoleInput = input(": ")
 
 while consoleInput != "-exit":
@@ -9,6 +11,6 @@ while consoleInput != "-exit":
         consoleInput = input(": ")
         continue
 
-    command.ActivateCommand()
+    command.TryActivateCommand()
 
     consoleInput = input(": ")
