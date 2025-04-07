@@ -1,124 +1,200 @@
-from abc import ABC, abstractmethod
 import IOReader
 import DataParser
 import Visualizer
 
 class Command:
+    helpInformation = "Empty Command, Does Nothing..."
+
     def __init__(self):
-        self.context_prop = None # The actual underlying value of the property
         self.validCommand = True
+
+    def TryAbsorbContext(self, tokenizedContext):
+        pass
 
     # Sets the internal state of the command, assigned by the entire line
     @property
     def context(self):
         pass
 
-    @abstractmethod
     def ActivateCommand(self):
         pass
 
+    def TryActivateCommand(self):
+        try:
+            self.ActivateCommand()
+        except:
+            print ("Command Failed")
+
 class GetOcurrences(Command):
+    helpInformation = "Finds Number of Ocurrences of a word in a certain file. Expected Format: find (case sensitive) (savedFilename)"
+
     @property
     def context(self):
         pass
 
+    def TryAbsorbContext(self, tokenizedContext):
+        self.isCaseSensitive = tokenizedContext[1] == "C"
+
+        self.wordSearchingFor = tokenizedContext[2]
+
+        self.cachedFilename = tokenizedContext[3]
+        
     @context.setter
     def context(self, value):
         try:
-            if value[5] == "c": # Not Case Sensitive, Default is case sensitive
-                self.isCaseSensitive = False
+            self.TryAbsorbContext(value)
 
-            self.context_prop = value[7::] # Get the actual word
-        except:
-            self.validCommand = False # the feedback was unprocessable
+            return
+        except IndexError:
+            print("Command must have correct # of Args")
+
+        self.validCommand = False # the feedback was unprocessable
     
     @context.getter
     def context(self):
-        return self.context_prop
-    
-    def FindCaseSensitiveOcurrences(self):
-        if not self.context in DataParser.Cached.defaultWordsToFrequency:
-            print(0)
+        return self.wordSearchingFor
 
-            return
+    def ActivateCommand(self):
+        cachedFile = DataParser.GetCachedFileByName(self.cachedFilename)
 
-        print(DataParser.Cached.defaultWordsToFrequency[self.context])
-
-    def FindNonCaseSensitiveOcurrences(self):
-        for key in DataParser.Cached.allLowerWordsToFrequency.keys():
-            if key.lower() == self.context.lower():
-                print(DataParser.Cached.allLowerWordsToFrequency[key])
-
-                return
-
-        print(0)
+        print( cachedFile.GetAppearencesOfWord(self.wordSearchingFor) )
 
     # Returns 0 if the identifier doesn't exist
-    def ActivateCommand(self):
-        if self.isCaseSensitive:
-            self.FindCaseSensitiveOcurrences()
-        else:
-            self.FindNonCaseSensitiveOcurrences()
+    def TryActivateCommand(self):
+        self.ActivateCommand()
             
 
     def __init__(self):
         super().__init__()
 
-        self.isCaseSensitive = True
+        self.isCaseSensitive: bool = True
+
+        self.cachedFilename: str = None
+        self.wordSearchingFor: str = None
 
 class OpenFile(Command):
+    helpInformation = "Opens a file for processing by the system. Expected format: open (file path) \n Optionally - as (saved filename)"
+
     @property
     def context():
         pass
 
     @context.getter
     def context(self):
-        return self.context_prop
+        return self.filepath
+
+    def TryAbsorbContext(self, tokenizedContext): # Expected Format: open {filename} as (optional) {saved filename} (default saved filename is the text file name)
+        self.filepath = tokenizedContext[1]
+
+        if len(tokenizedContext) >= 4:
+            self.savedFilename = tokenizedContext[3]
+        else:
+            self.savedFilename = self.filepath
 
     @context.setter
     def context(self, value):
-        self.context_prop = value[5::]
-
-    def ActivateCommand(self):
         try:
-            textLines = IOReader.TryExtractTextLines(self.context)
-            DataParser.currentTokenizedWords = DataParser.CacheTokenizedFileAsWords(textLines)
-            
-            DataParser.CacheWordFrequencies(DataParser.Cached.currentTokenizedWords)
+            self.TryAbsorbContext(value)
+        except IndexError:
+            print ("Must Contain Correct Number of Args")
 
-            DataParser.CacheOrganizedWordFrequencyList(DataParser.Cached.defaultWordsToFrequency, DataParser.Cached.byFreqWordsToFrequency)
-            DataParser.CacheOrganizedWordFrequencyList(DataParser.Cached.allLowerWordsToFrequency, DataParser.Cached.allLowerByFreqWordsToFreq)
-
-            DataParser.Cached.currentPlotBounds = (0, len(DataParser.Cached.byFreqWordsToFrequency) - 1)
+    def TryActivateCommand(self):
+        try:
+            self.ActivateCommand()
         except:
             print("Could not open requested file")
             return
         
         print("File opened sucessfully")
 
-class PlotCurrentData(Command):
+    def ActivateCommand(self):
+        textLines = IOReader.TryExtractTextLines(self.filepath)
+
+        cachedFile = DataParser.CreateDefaultCachedFile(self.savedFilename)
+
+        cachedFile.CacheLinesIntoTokenizedWords(textLines)
+        cachedFile.CacheWordFrequencies()
+
+        cachedFile.CacheOrganizedWordFrequencyLists()
+
+        cachedFile.plotBounds = (0, len(cachedFile.byFreqWordsToFrequency) - 1)
+
+    def __init__(self):
+        super().__init__()
+
+        self.filepath = None
+        self.savedFilename = None
+
+class RenameFile(Command):
+    helpInformation = "Renames a file in the system. Expected format rename (old savedFilename) (new savedFilename)"
+
+    def __init__(self):
+        super().__init__()
+
+        self.newName = None
+        self.oldName = None
+
     @property
     def context(self):
-        return self.context_prop
+        pass
+
+    @context.getter
+    def context(self):
+        return self.newName
+
+    def TryAbsorbContext(self, tokenizedContext):
+        self.oldName = tokenizedContext[1]
+        self.newName = tokenizedContext[2]
+
+    @context.setter
+    def context(self, value):
+        try:
+            self.TryAbsorbContext(value)
+
+            return
+        except:
+            print ("Input Correct Number of Args")
+
+        self.validCommand = False
+
+    def ActivateCommand(self):
+        cachedFile = DataParser.GetCachedFileByName(self.oldName)
+        cachedFile.fileName = self.newName
+
+    def TryActivateCommand(self):
+        try:
+            self.ActivateCommand()
+        except:
+            print ("Could not set new file name in system")
+            return
+        
+        print (f"Able to change {self.oldName} to {self.newName}")
+
+class PlotCurrentData(Command):
+    helpInformation = "Plots information from a saved file using its stored properties (I.E. black/whitelist and what not). \n \
+    Expected format: plot (case sensitive) (savedFilename)"
+
+    @property
+    def context(self):
+        pass
     
     @context.getter
     def context(self):
-        return self.context_prop
+        return self.validCommand
     
+    def TryAbsorbContext(self, tokenizedContext):
+        self.isCaseSensitive = tokenizedContext[1] == "C"
+
+        self.cachedFilename = tokenizedContext[2]
+
     @context.setter
     def context(self, value):
-        commandSettings = str.split(value) # Should be 2 long (plot, and Case Sensitive Flag)
-        
         try:
-            self.isCaseSensitive = commandSettings[1][0] == "C"
+            self.TryAbsorbContext(value)
 
             return
-        except ValueError:
-            print("Number of Entries must be a positive number")
         except IndexError:
             print("Must Specify Correct # of Args")
-        except Exception:
-            pass # Will only print generic exception documentation
 
         self.validCommand = False
 
@@ -126,45 +202,62 @@ class PlotCurrentData(Command):
         super().__init__()
 
         self.isCaseSensitive = True
+        self.cachedFilename = None
 
-    def ActivateCommand(self):
+    def TryActivateCommand(self):
         try:
-            Visualizer.LoadInGraphData(self.isCaseSensitive)
-            Visualizer.RenderBarGraph()
-        except Exception:
+            self.ActivateCommand()
+        except:
             print("Could not plot the data.")
             return
         
         print("Sucessfully graphed data")
 
+    def ActivateCommand(self):
+        cachedFile = DataParser.GetCachedFileByName(self.cachedFilename)
+        cachedFile.isCaseSensitive = self.isCaseSensitive
+
+        Visualizer.LoadInGraphData(cachedFile)
+        Visualizer.RenderBarGraph()
+
 class SetPlotBounds(Command):
+    helpInformation = "Sets the bounds for graphed data by frequency for the given file. Expected format: setBounds (lower bound) (upper bound) (savedFilename)"
+
     @property
     def context():
         pass
 
     @context.getter
     def context(self):
-        return self.context_prop
+        return self.startStopIndexes
     
+    def TryAbsorbContext(self, tokenizedContext):
+        self.startStopIndexes = ( int(tokenizedContext[1]) - 1, int(tokenizedContext[2]) - 1 )
+
+        self.filename = tokenizedContext[3]
+
     @context.setter
     def context(self, value):
-        startStopIndexesStr = str.split(value)
-
         try:
-            self.startStopIndexes = ( int(startStopIndexesStr[1]) - 1, int(startStopIndexesStr[2]) - 1 )
+            self.TryAbsorbContext(value)
 
             return
         except IndexError:
-            print("Invalid Command Args")
+            print("Must Set Correct Number of Command Args")
         except ValueError:
             print("Enter in Numbers for the Bounds")
-        except Exception:
-            pass
 
         self.validCommand = False
     
+    def TryActivateCommand(self):
+        try:
+            self.ActivateCommand()
+        except:
+            print ("Failed to set plot indexes")
+
     def ActivateCommand(self):
-        DataParser.Cached.currentPlotBounds = self.startStopIndexes
+        cachedFile = DataParser.GetCachedFileByName(self.filename)
+        cachedFile.plotBounds = self.startStopIndexes
 
         print (f"Set Plot Bound Indexes To ({self.startStopIndexes[0]}, {self.startStopIndexes[1]})")
 
@@ -172,28 +265,91 @@ class SetPlotBounds(Command):
         super().__init__()
 
         self.startStopIndexes = (0, 0)
+        self.filename = None
+
         self.validCommand = True
 
-# Returns None if the input matches no recognizable command, otherwise returns the command object
+class SetBlacklist(Command):
+    helpInformation = "nothing"
+
+    @property
+    def context():
+        pass
+
+    @context.getter
+    def context(self):
+        pass
+    
+    def TryAbsorbContext(self, tokenizedContext):
+        self.filepath = tokenizedContext[1]
+        self.cachedFilename = tokenizedContext[2]
+
+    @context.setter
+    def context(self, value):
+        try:
+            self.TryAbsorbContext(value)
+        except IndexError:
+            print("Enter Correct # Of Args")
+
+    def __init__(self):
+        super().__init__()
+
+        self.filepath = None
+        self.cachedFilename = None
+
+    def ActivateCommand(self):
+        cachedFile = DataParser.GetCachedFileByName(self.cachedFilename)
+        
+        allLines = IOReader.TryExtractTextLines(self.filepath)
+        tokenizedFile = DataParser.TokenizeFileFromLines(allLines)
+
+        cachedFile.CacheTokenizedFileIntoBlacklist(tokenizedFile)
+
+    def TryActivateCommand(self):
+        try:
+            self.ActivateCommand()
+        except:
+            print("Could not set blacklist")
+
+            return
+
+        print (f"Set Blacklist from {self.filepath}")
+
+commandImplementations = {"find" : GetOcurrences, # These are the built in commands, you can add your own to the system using a derived class from command
+                       "open" : OpenFile,  # Of note, the help command is added later at runtime as it relies on the existence of this data structure
+                       "plot" : PlotCurrentData,
+                       "setBounds" : SetPlotBounds,
+                       "setBlacklist" : SetBlacklist,
+                       "rename" : RenameFile }
+
+class GetHelpInformation(Command):
+    @property
+    def context(self):
+        pass
+
+    @context.setter
+    def context(self, value):
+        pass
+
+    def TryActivateCommand(self):
+        for commandName in commandImplementations.keys():
+            print ( f"{commandName} - {commandImplementations[commandName].helpInformation} \n" )
+
+def AddHelpMenu():
+    commandImplementations.update( {"help" : GetHelpInformation } )
+
 def RecieveNextCommand(consoleInput):
-    outputCommand = None
+    tokenizedCommand = str.split(consoleInput)
+
+    if not (len(tokenizedCommand) > 0 and tokenizedCommand[0] in commandImplementations.keys()):
+        return Command()
     
-    if str.startswith(consoleInput, "find"):
-        outputCommand = GetOcurrences()
-    elif str.startswith(consoleInput, "open"):
-        outputCommand = OpenFile()
-    elif str.startswith(consoleInput, "plot"):
-        outputCommand = PlotCurrentData()
-    elif str.startswith(consoleInput, "setBounds"):
-        outputCommand = SetPlotBounds()
-    else:
-        return None
-    
-    outputCommand.context = consoleInput
+    outputCommand = commandImplementations[tokenizedCommand[0]]()
+    outputCommand.context = tokenizedCommand
 
     if not outputCommand.validCommand:
         print("Not Valid Command Syntax")
 
-        return None
+        return Command()
     
     return outputCommand
