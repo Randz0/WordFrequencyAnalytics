@@ -20,7 +20,11 @@ class CachedFile:
         self.blacklist = []
         self.allLowerBlacklist = []
 
+        self.whitelist = []
+        self.allLowerWhitelist = []
+
         self.blacklistInUse = []
+        self.whitelistInUse = []
 
     def GetAppearencesOfWord(self, wordLookingFor: str):
         listSearchingFrom = self.wordsToFrequency if self.isCaseSensitive else self.allLowerWordsToFrequency
@@ -32,37 +36,45 @@ class CachedFile:
         return listSearchingFrom[wordLookingFor]
 
     def WordIsInOutputData(self, word):
-        return not word in self.blacklistInUse
+        if len(self.whitelist) == 0:
+            return not word in self.blacklistInUse
+        
+        return (not word in self.blacklistInUse) and word in self.whitelistInUse
+
+    def SetInUseListsFromSettings(self):
+        self.byFreqWordsToFreqInUse = self.byFreqWordsToFrequency if self.isCaseSensitive else self.allLowerByFreqWordsToFreq
+        
+        self.blacklistInUse = self.blacklist if self.isCaseSensitive else self.allLowerBlacklist
+        self.whitelistInUse = self.whitelist if self.isCaseSensitive else self.allLowerWhitelist
 
     def FetchWordsToFrequencies(self):
-            self.byFreqWordsToFreqInUse = self.byFreqWordsToFrequency if self.isCaseSensitive else self.allLowerByFreqWordsToFreq
-            self.blacklistInUse = self.blacklist if self.isCaseSensitive else self.allLowerBlacklist
+        self.SetInUseListsFromSettings()
 
-            wordsWithinBounds = []
-            frequenciesWithinBounds = []
+        wordsWithinBounds = []
+        frequenciesWithinBounds = []
 
-            numberOfWordsToFetch = self.plotBounds[1] - self.plotBounds[0]
+        numberOfWordsToFetch = self.plotBounds[1] - self.plotBounds[0]
 
-            index = self.plotBounds[0] - 1
-            stopIndex = self.plotBounds[0] + numberOfWordsToFetch
+        index = self.plotBounds[0] - 1
+        stopIndex = self.plotBounds[0] + numberOfWordsToFetch
 
-            currentWordFreqPair = ("", 0)
+        currentWordFreqPair = ("", 0)
 
-            while index < stopIndex:
-                index += 1
+        while index < stopIndex:
+            index += 1
 
-                if index >= len(self.byFreqWordsToFreqInUse):
-                    break
+            if index >= len(self.byFreqWordsToFreqInUse):
+                break
 
-                currentWordFreqPair = self.byFreqWordsToFreqInUse[index]
+            currentWordFreqPair = self.byFreqWordsToFreqInUse[index]
 
-                if self.WordIsInOutputData( currentWordFreqPair[0] ):
-                    wordsWithinBounds.append( currentWordFreqPair[0] )
-                    frequenciesWithinBounds.append( currentWordFreqPair[1] )
-                else:
-                    stopIndex += 1
+            if self.WordIsInOutputData( currentWordFreqPair[0] ):
+                wordsWithinBounds.append( currentWordFreqPair[0] )
+                frequenciesWithinBounds.append( currentWordFreqPair[1] )
+            else:
+                stopIndex += 1
 
-            return (wordsWithinBounds, frequenciesWithinBounds)
+        return (wordsWithinBounds, frequenciesWithinBounds)
 
     def CacheOrganizedWordFrequencyLists(self):
         self.byFreqWordsToFrequency.clear()
@@ -105,6 +117,14 @@ class CachedFile:
             self.blacklist.append(tokenizedFile[i])
 
             self.allLowerBlacklist.append(tokenizedFile[i].lower())
+
+    def CacheTokenizedFileIntoWhitelist(self, tokenizedFile: list[str]):
+        self.whitelist.clear()
+
+        for i in range(len(tokenizedFile)):
+            self.whitelist.append(tokenizedFile[i])
+
+            self.allLowerWhitelist.append(tokenizedFile[i].lower())
 
 cachedFiles: list[CachedFile] = []
 
