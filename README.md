@@ -12,6 +12,6 @@ This Seciton should outline some of the main commands as well as dependencies to
       - Running the software should be as simple as running "py main.py" (or "python main.py") from the command prompt while having the
       necessarry installed software (python and matlibplot)
 
-      Type <i><b>help</b></i> to view the help menu
+Type <i><b>help</b></i> to view the help menu
 
-      <b>-exit</b> Exits the program
+<b>-exit</b> Exits the program
