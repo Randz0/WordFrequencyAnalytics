@@ -268,8 +268,10 @@ class SetPlotBounds(Command):
 
         self.validCommand = True
 
+
 class SetBlacklist(Command):
-    helpInformation = "nothing"
+    helpInformation = "Sets a blacklist to a given file so that when the data is plotted, certain words are ignored." \
+    "Expected Format : setBlacklist (file path or 'no-list' to wipe) (file name)"
 
     @property
     def context():
@@ -318,7 +320,8 @@ class SetBlacklist(Command):
         print (f"Set Blacklist from {self.filepath}")
 
 class SetWhitelist(Command):
-    helpInformation = ""
+    helpInformation = "Sets a whitelist to a given file so that when the data is plotted, only certain words are plotted." \
+    "Expected Format : setWhitelist (file path or 'no-list' to wipe) (file name)"
 
     @property
     def context(self):
