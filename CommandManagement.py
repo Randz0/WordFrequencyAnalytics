@@ -11,9 +11,8 @@ class Command:
     def TryAbsorbContext(self, tokenizedContext):
         pass
 
-    # Sets the internal state of the command, assigned by the entire line
     @property
-    def context(self):
+    def context(self): # The setter's in particualar of this variable allow for data to be stored from the cmd line args
         pass
 
     def ActivateCommand(self):
@@ -299,9 +298,12 @@ class SetBlacklist(Command):
 
     def ActivateCommand(self):
         cachedFile = DataParser.GetCachedFileByName(self.cachedFilename)
-        
-        allLines = IOReader.TryExtractTextLines(self.filepath)
-        tokenizedFile = DataParser.TokenizeFileFromLines(allLines)
+
+        tokenizedFile = []
+
+        if self.filepath != "no-list":
+            allLines = IOReader.TryExtractTextLines(self.filepath)
+            tokenizedFile = DataParser.TokenizeFileFromLines(allLines)
 
         cachedFile.CacheTokenizedFileIntoBlacklist(tokenizedFile)
 
@@ -315,11 +317,63 @@ class SetBlacklist(Command):
 
         print (f"Set Blacklist from {self.filepath}")
 
-commandImplementations = {"find" : GetOcurrences, # These are the built in commands, you can add your own to the system using a derived class from command
-                       "open" : OpenFile,  # Of note, the help command is added later at runtime as it relies on the existence of this data structure
+class SetWhitelist(Command):
+    helpInformation = ""
+
+    @property
+    def context(self):
+        pass
+
+    @context.getter
+    def context(self):
+        return self.filepath
+
+    def TryAbsorbContext(self, tokenizedContext):
+        self.filepath = tokenizedContext[1]
+        self.filename = tokenizedContext[2]
+
+    @context.setter
+    def context(self, value):
+        try:
+            self.TryAbsorbContext(value)
+        except IndexError:
+            print ("Unable to set whitelist. Incorrect Number of args")
+
+            return
+
+    def ActivateCommand(self):
+        cachedFile = DataParser.GetCachedFileByName(self.filename)
+
+        tokenizedFile = []
+
+        if self.filepath != "no-list":
+            fileLines = IOReader.TryExtractTextLines(self.filepath)
+            tokenizedFile = DataParser.TokenizeFileFromLines(fileLines)
+        
+        cachedFile.CacheTokenizedFileIntoWhitelist(tokenizedFile)
+
+    def TryActivateCommand(self):
+        try:
+            self.ActivateCommand()
+        except:
+            print("Unable to set whitelist.")
+
+            return
+        
+        print ("Sucessfully set whitelist")
+
+    def __init__(self):
+        super().__init__()
+
+        self.filepath = None
+        self.filename = None
+
+commandImplementations = { "find" : GetOcurrences,
+                       "open" : OpenFile,
                        "plot" : PlotCurrentData,
                        "setBounds" : SetPlotBounds,
                        "setBlacklist" : SetBlacklist,
+                       "setWhitelist" : SetWhitelist,
                        "rename" : RenameFile }
 
 class GetHelpInformation(Command):
