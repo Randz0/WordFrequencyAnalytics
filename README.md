@@ -6,7 +6,7 @@ in speech.
 
 Help Section
 -
-This Seciton should outline some of the main commands as well as dependencies to run the program
+This Section should outline some of the main commands as well as dependencies to run the program
 
 <b>How to Run</b> <br>
       - Running the software should be as simple as running "py main.py" (or "python main.py") from the command prompt while having the
